@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pengguna (Admin View)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .welcome { font-size: 1.5em; }
+        .logout-btn { padding: 10px 20px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .logout-btn:hover { background-color: #c82333; }
+        .data-box { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        
+        /* Gaya untuk Tabel */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #3f51b5; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:hover { background-color: #ddd; }
+        .error { color: #a94442; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="welcome">Selamat Datang, <span id="usernameDisplay">Pengguna!</span></div>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+
+    <div class="data-box">
+        <h3>Daftar Semua Pengguna Terdaftar (Admin View)</h3>
+        <p id="statusMessage">Mengambil data...</p>
+        
+        <div id="userDataContainer">
+            </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        
+        // Fungsi untuk mengambil Payload JWT (Tidak berubah)
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // --- Verifikasi Token Awal ---
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            alert('Sesi berakhir. Silakan login kembali.');
+            window.location.href = 'login.html';
+        }
+
+        const userPayload = parseJwt(token);
+        if (!userPayload || !userPayload.id) {
+            alert('Token tidak valid. Silakan login kembali.');
+            localStorage.removeItem('userToken');
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('usernameDisplay').textContent = userPayload.username;
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('userToken');
+            alert('Anda telah logout.');
+            window.location.href = 'login.html';
+        });
+
+        // ----------------------------------------------------
+        // Fungsi Utama: Mengambil dan Menampilkan SEMUA Data
+        // ----------------------------------------------------
+        async function fetchProtectedData() {
+            const statusMessage = document.getElementById('statusMessage');
+            const userDataContainer = document.getElementById('userDataContainer');
+            
+            // PENTING: PANGGIL ENDPOINT BARU /users (bukan /users/:id)
+            try {
+                const response = await fetch(`${API_BASE_URL}/users`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}` 
+                    }
+                });
+
+                const result = await response.json();
+                
+                // Pastikan data yang diterima adalah array
+                if (response.ok && Array.isArray(result.data)) {
+                    statusMessage.textContent = `Data berhasil dimuat. Total ${result.data.length} pengguna terdaftar.`;
+                    
+                    let tableRows = '';
+                    // Loop melalui array data pengguna
+                    result.data.forEach((user, index) => {
+                        tableRows += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${user.user_id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.email}</td>
+                                <td>${user.password}</td> 
+                            </tr>
+                        `;
+                    });
+
+                    // Buat struktur tabel
+                    const tableHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>User ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Password (Hash)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    `;
+                    userDataContainer.innerHTML = tableHTML;
+                    
+                } else {
+                    // Penanganan Error (Jika token tidak valid atau error lain)
+                    statusMessage.innerHTML = `<span class="error">Akses Gagal: ${result.message || 'Error tidak diketahui, mungkin token kedaluwarsa.'}</span>`;
+                    userDataContainer.innerHTML = '<p class="error">Gagal mengambil daftar pengguna karena otorisasi atau masalah layanan.</p>';
+                }
+
+            } catch (error) {
+                statusMessage.textContent = 'Gagal koneksi ke Gateway. Pastikan semua server berjalan.';
+                console.error('Fetch Error:', error);
+            }
+        }
+
+        fetchProtectedData();
+    </script>
+</body>
+</html>
