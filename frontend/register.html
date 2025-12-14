@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Registrasi Akun</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #e9ecef; margin: 0; }
+        .form-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); width: 320px; }
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input[type="text"], input[type="password"], input[type="email"] { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 20px; 
+            display: inline-block; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        button { 
+            background-color: #28a745; /* Hijau untuk Daftar */
+            color: white; 
+            padding: 14px 20px; 
+            margin-top: 10px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #1e7e34; }
+        #message { margin-top: 25px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
+        .link-login { text-align: center; margin-top: 15px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>BUAT AKUN BARU</h2>
+        <form id="registerForm">
+            <label for="username">Nama Pengguna:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <label for="password">Kata Sandi:</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit">Daftar Sekarang</button>
+        </form>
+        <div id="message"></div>
+        
+        <div class="link-login">
+            Sudah punya akun? <a href="login.html">Masuk di sini</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); 
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const messageDiv = document.getElementById('message');
+            
+            messageDiv.textContent = 'Memproses Registrasi...';
+            messageDiv.style.backgroundColor = '#fff3cd'; 
+            messageDiv.style.color = '#856404';
+
+            try {
+                // Target API Gateway untuk Registrasi
+                const API_URL = 'http://localhost:3000/auth/register';
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, email })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Registrasi Berhasil (Status 201)
+                    messageDiv.textContent = `SUCCESS: ${data.message} Anda akan dialihkan ke halaman Login.`;
+                    messageDiv.style.backgroundColor = '#d4edda'; 
+                    messageDiv.style.color = '#155724';
+                    
+                    // Arahkan ke halaman login setelah 2 detik
+                    setTimeout(() => {
+                        window.location.href = 'login.html'; 
+                    }, 2000);
+
+                } else {
+                    // Registrasi Gagal (Misal: Username sudah ada)
+                    messageDiv.textContent = `GAGAL: ${data.message}`;
+                    messageDiv.style.backgroundColor = '#f8d7da'; 
+                    messageDiv.style.color = '#721c24';
+                }
+
+            } catch (error) {
+                console.error('Error saat menghubungi API:', error);
+                messageDiv.textContent = 'ERROR: Koneksi ke server gagal.';
+                messageDiv.style.backgroundColor = '#f8d7da';
+                messageDiv.style.color = '#721c24';
+            }
+        });
+    </script>
+</body>
+</html>
