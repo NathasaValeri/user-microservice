@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Pengguna</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); width: 300px; }
+        h2 { text-align: center; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #4cae4c; }
+        .message { margin-top: 15px; text-align: center; padding: 10px; border-radius: 4px; }
+        .success { background-color: #dff0d8; color: #3c763d; border: 1px solid #d6e9c6; }
+        .error { background-color: #f2dede; color: #a94442; border: 1px solid #ebccd1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Login</button>
+        </form>
+        <div id="message" class="message" style="display: none;"></div>
+        <p style="text-align: center; margin-top: 15px;">Belum punya akun? <a href="register.html">Daftar di sini</a></p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            messageDiv.style.display = 'none';
+            messageDiv.className = 'message';
+            messageDiv.textContent = '';
+
+            try {
+                const response = await fetch('http://localhost:3000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // --- Bagian Penting: Menyimpan Token ---
+                    // JWT disimpan di Local Storage agar dapat diakses oleh halaman lain
+                    localStorage.setItem('userToken', data.token);
+
+                    messageDiv.classList.add('success');
+                    messageDiv.textContent = 'Login berhasil! Mengalihkan ke Dashboard...';
+                    messageDiv.style.display = 'block';
+
+                    // Alihkan ke Dashboard
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html'; 
+                    }, 1500);
+
+                } else {
+                    // Login gagal (401 Unauthorized atau 400 Bad Request)
+                    messageDiv.classList.add('error');
+                    messageDiv.textContent = data.message || 'Login gagal. Cek kembali username dan password Anda.';
+                    messageDiv.style.display = 'block';
+                }
+
+            } catch (error) {
+                // Kesalahan koneksi (Server down, CORS)
+                messageDiv.classList.add('error');
+                messageDiv.textContent = 'Gagal koneksi ke server. Pastikan semua microservice berjalan.';
+                messageDiv.style.display = 'block';
+                console.error('Fetch Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
